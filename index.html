@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sydney to Brisbane — Our Australia Trip</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#211D1A;
+    --sand:#EFE8D8;
+    --sand-deep:#E2D8C0;
+    --teal:#1F4B43;
+    --teal-deep:#163831;
+    --ochre:#C17817;
+    --rust:#A64B3F;
+    --paper:#FBF8F1;
+    --line:rgba(33,29,26,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;font-family:'Inter',sans-serif;color:var(--ink);background:var(--paper);}
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:500;margin:0;}
+
+  #app{position:relative;height:100vh;width:100%;overflow:hidden;}
+  #map{position:absolute;inset:0;}
+
+  .leaflet-container{background:#DCE9E5;font-family:'Inter',sans-serif;}
+
+  header{
+    position:absolute;top:0;left:0;right:0;z-index:500;
+    display:flex;align-items:baseline;gap:12px;
+    padding:18px 24px;
+    background:linear-gradient(to bottom, rgba(251,248,241,0.92), rgba(251,248,241,0));
+    pointer-events:none;
+  }
+  header h1{font-size:22px;color:var(--teal-deep);}
+  header span{font-size:13px;color:var(--ink);opacity:0.65;}
+
+  .place-pin{
+    width:32px;height:32px;border-radius:50% 50% 50% 0;
+    background:var(--rust);
+    border:2px solid var(--paper);
+    transform:rotate(-45deg);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,0.25);
+    cursor:pointer;
+  }
+  .place-pin.city{background:var(--teal);width:38px;height:38px;}
+  .place-pin span{transform:rotate(45deg);font-size:15px;color:#fff;}
+
+  .panel{
+    position:absolute;top:0;right:0;height:100%;width:420px;max-width:92vw;
+    background:var(--paper);
+    box-shadow:-8px 0 24px rgba(0,0,0,0.12);
+    transform:translateX(100%);
+    transition:transform 0.32s ease;
+    z-index:1000;
+    overflow-y:auto;
+    padding-bottom:60px;
+  }
+  .panel.open{transform:translateX(0);}
+
+  .panel-hero{
+    padding:28px 28px 20px;
+    background:var(--teal);
+    color:var(--sand);
+    position:relative;
+  }
+  .panel-hero .eyebrow{font-size:13px;opacity:0.75;margin-bottom:4px;}
+  .panel-hero h2{font-size:26px;color:#fff;}
+  .panel-hero .dates{font-size:13px;color:var(--sand);opacity:0.8;margin-top:6px;}
+  .panel-close{
+    position:absolute;top:18px;right:18px;
+    width:32px;height:32px;border-radius:50%;
+    border:1px solid rgba(255,255,255,0.4);background:transparent;
+    color:#fff;font-size:16px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .panel-close:hover{background:rgba(255,255,255,0.12);}
+
+  .panel-section{padding:22px 28px;border-bottom:1px solid var(--line);}
+  .panel-section h3{font-size:14px;color:var(--rust);margin-bottom:10px;letter-spacing:0.2px;}
+  .panel-section p{font-size:15px;line-height:1.6;margin:0;color:var(--ink);}
+
+  .weather-row{display:flex;align-items:center;gap:14px;}
+  .weather-temp{font-family:'Fraunces',serif;font-size:32px;color:var(--teal-deep);}
+  .weather-meta{font-size:13px;color:var(--ink);opacity:0.7;line-height:1.5;}
+
+  .gallery-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px;
+  }
+  .thumb{
+    aspect-ratio:1;border-radius:6px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;color:rgba(255,255,255,0.85);
+    background:var(--teal);
+    cursor:pointer;
+  }
+  .thumb:nth-child(3n+2){background:var(--ochre);}
+  .thumb:nth-child(3n+3){background:var(--rust);}
+
+  .placeholder-note{
+    font-size:12.5px;color:var(--ink);opacity:0.55;font-style:italic;margin-top:8px;
+  }
+
+  .legend{
+    position:absolute;bottom:22px;left:22px;z-index:500;
+    background:var(--paper);border:1px solid var(--line);border-radius:10px;
+    padding:12px 16px;font-size:12.5px;color:var(--ink);
+    max-width:220px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.08);
+  }
+  .legend strong{font-family:'Fraunces',serif;font-weight:500;display:block;margin-bottom:4px;font-size:14px;}
+
+  @media (max-width:640px){
+    .panel{width:100%;max-width:100%;top:auto;bottom:0;height:85%;transform:translateY(100%);border-radius:18px 18px 0 0;}
+    .panel.open{transform:translateY(0);}
+    header{padding:14px 16px;}
+    header h1{font-size:18px;}
+    .legend{display:none;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="map"></div>
+
+  <header>
+    <h1>Sydney → Brisbane</h1>
+    <span>Our 3 week Australia trip, Aug 2026</span>
+  </header>
+
+  <div class="legend">
+    <strong>How this works</strong>
+    Tap a pin for the write-up, photos and the actual weather that day.
+  </div>
+
+  <div class="panel" id="panel">
+    <div class="panel-hero">
+      <button class="panel-close" onclick="closePanel()">✕</button>
+      <div class="eyebrow" id="panel-region">Place</div>
+      <h2 id="panel-title">Location name</h2>
+      <div class="dates" id="panel-dates">Date</div>
+    </div>
+
+    <div class="panel-section">
+      <h3>What we did here</h3>
+      <p id="panel-writeup">Write-up goes here.</p>
+    </div>
+
+    <div class="panel-section">
+      <h3>Weather that day</h3>
+      <div class="weather-row">
+        <div class="weather-temp" id="panel-temp">--°</div>
+        <div class="weather-meta" id="panel-weather-meta">Loading…</div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h3>Photos &amp; video</h3>
+      <div class="gallery-grid" id="panel-gallery"></div>
+      <p class="placeholder-note">Placeholder tiles — your real thumbnails will go here.</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+/* ---- Real stops and dates from the trip. Write-ups are first drafts — expand freely. ---- */
+const places = [
+  { id:"redfern", name:"Redfern (base)", region:"Sydney", lat:-33.8930, lng:151.2044, isCity:true, isRouteStop:true, order:1, date:"2026-08-11",
+    writeup:"Landed in Sydney Tuesday evening after the long haul via Delhi with Air India, and settled into our Airbnb on Chelsea Street, Redfern.", photoCount:4 },
+  { id:"sydney-harbour", name:"Harbour Bridge & Opera House", region:"Sydney", lat:-33.8568, lng:151.2153, isCity:false, isRouteStop:false, order:1.1, date:"2026-08-13",
+    writeup:"A day in the city — the Harbour Bridge, the Opera House, and a walk through the Royal Botanic Gardens.", photoCount:6 },
+  { id:"sydney-bondi", name:"Bondi to Coogee", region:"Sydney", lat:-33.8908, lng:151.2743, isCity:false, isRouteStop:false, order:1.2, date:"2026-08-14",
+    writeup:"Beach day — Bondi Beach, then the coastal walk down to Coogee.", photoCount:7 },
+  { id:"sydney-coogee", name:"City shopping & Coogee Pavilion", region:"Sydney", lat:-33.9198, lng:151.2589, isCity:false, isRouteStop:false, order:1.3, date:"2026-08-15",
+    writeup:"Shopping in the city centre, then dinner at Coogee Pavilion with Kate's friend Emily.", photoCount:3 },
+  { id:"fivedock", name:"Five Dock Italian Festival", region:"Sydney", lat:-33.8667, lng:151.1204, isCity:false, isRouteStop:false, order:1.4, date:"2026-08-16",
+    writeup:"The Italian Festival at Five Dock.", photoCount:4 },
+
+  { id:"portstephens", name:"One Mile Beach (base)", region:"Port Stephens", lat:-32.7539, lng:152.1234, isCity:true, isRouteStop:true, order:2, date:"2026-08-17",
+    writeup:"Picked up our Kia Carnival from Simba at the airport and drove up to Port Stephens, stopping for brunch at Tommy's Café in Gosford. Settled in at Ingenia Holidays, One Mile Beach, then dinner at Hogs Breath in Nelson Bay.", photoCount:5 },
+  { id:"annabay", name:"Anna Bay Sand Safari", region:"Port Stephens", lat:-32.7833, lng:152.0833, isCity:false, isRouteStop:false, order:2.1, date:"2026-08-18",
+    writeup:"4WD sand dune safari at Anna Bay.", photoCount:6 },
+
+  { id:"portmacquarie", name:"Port Macquarie", region:"Mid North Coast", lat:-31.4308, lng:152.9091, isCity:true, isRouteStop:true, order:3, date:"2026-08-19",
+    writeup:"Drove up via Beach Bums Café in Forster. Stayed at Oxley Cove Apartments, walked the Sea Acres Rainforest boardwalk, and finished with Hogs Breath and a Blue Cow Gelato in the evening.", photoCount:6 },
+
+  { id:"coffsharbour", name:"Coffs Harbour", region:"Mid North Coast", lat:-30.2963, lng:153.1157, isCity:true, isRouteStop:true, order:4, date:"2026-08-20",
+    writeup:"On to Coffs Harbour, grabbing pastries from Bakers Delight before leaving Port Macquarie. Stayed at Reflections Holidays on the Pacific Highway, evening at the Hoey Moey.", photoCount:4 },
+
+  { id:"byronbay", name:"Byron Bay (base)", region:"Byron Bay", lat:-28.6474, lng:153.6020, isCity:true, isRouteStop:true, order:5, date:"2026-08-21",
+    writeup:"Drove to Byron via Botero Roastery in Maclean for brunch, and checked into The Terraces on Lawson Street.", photoCount:6 },
+  { id:"brunswick", name:"Brunswick Heads — Whale Watching", region:"Byron Bay", lat:-28.5386, lng:153.5486, isCity:false, isRouteStop:false, order:5.1, date:"2026-08-23",
+    writeup:"Whale watching out of Brunswick Heads with Blue Whale Diving Company.", photoCount:8 },
+
+  { id:"hollywell", name:"Hollywell — Rikki's Café (H2O)", region:"Gold Coast", lat:-27.9206, lng:153.4103, isCity:false, isRouteStop:true, order:6, date:"2026-08-24",
+    writeup:"On the way to Brisbane we stopped at Rikki's Café in Hollywell — the filming location from H2O — before continuing down through Broadwater.", photoCount:4 },
+
+  { id:"brisbane", name:"Parkland Boulevard (base)", region:"Brisbane", lat:-27.4746, lng:153.0166, isCity:true, isRouteStop:true, order:7, date:"2026-08-24",
+    writeup:"Dropped the hire car at Simba near Brisbane Airport and taxied to our final Airbnb on Parkland Boulevard.", photoCount:4 },
+  { id:"redcliffe", name:"Redcliffe", region:"Brisbane", lat:-27.2307, lng:153.1136, isCity:false, isRouteStop:false, order:7.1, date:"2026-08-25",
+    writeup:"Kate and the girls met up with Claire in Redcliffe.", photoCount:3 },
+  { id:"queenstreet", name:"Queen Street Mall", region:"Brisbane", lat:-27.4689, lng:153.0235, isCity:false, isRouteStop:false, order:7.2, date:"2026-08-25",
+    writeup:"An afternoon at Queen Street Mall.", photoCount:4 },
+  { id:"skydeck", name:"Sky Deck, Queen's Wharf", region:"Brisbane", lat:-27.4742, lng:153.0252, isCity:false, isRouteStop:false, order:7.25, date:"2026-08-25",
+    writeup:"Up to the Sky Deck at Queen's Wharf, 33 William Street, looking out over the river to Streets Beach on South Bank.", photoCount:5 },
+  { id:"auszoo", name:"Australia Zoo", region:"Beerwah", lat:-26.8389, lng:152.9556, isCity:false, isRouteStop:false, order:7.3, date:"2026-08-26",
+    writeup:"A full day at Australia Zoo.", photoCount:7 },
+  { id:"noosa", name:"Noosa", region:"Sunshine Coast", lat:-26.3949, lng:153.0918, isCity:false, isRouteStop:false, order:7.4, date:"2026-08-27",
+    writeup:"Day trip up to Noosa.", photoCount:6 },
+  { id:"southbank", name:"South Bank", region:"Brisbane", lat:-27.4759, lng:153.0197, isCity:false, isRouteStop:false, order:7.5, date:"2026-08-28",
+    writeup:"An afternoon at South Bank.", photoCount:5 },
+  { id:"milton", name:"South Bank & Milton", region:"Brisbane", lat:-27.4681, lng:153.0033, isCity:false, isRouteStop:false, order:7.6, date:"2026-08-29",
+    writeup:"Back to South Bank, plus a look around Milton.", photoCount:4 },
+  { id:"dfo", name:"DFO Skygate", region:"Brisbane Airport", lat:-27.3798, lng:153.1173, isCity:false, isRouteStop:false, order:7.7, date:"2026-08-30",
+    writeup:"Last day — the DFO outlet village at Skygate, then off to the airport for the flight home via Taipei on China Airlines.", photoCount:3 }
+];
+
+const weatherCache = {};
+const weatherCodeMap = {
+  0:"Clear sky", 1:"Mainly clear", 2:"Partly cloudy", 3:"Overcast",
+  45:"Fog", 48:"Fog", 51:"Light drizzle", 53:"Drizzle", 55:"Dense drizzle",
+  61:"Light rain", 63:"Rain", 65:"Heavy rain", 71:"Light snow", 73:"Snow", 75:"Heavy snow",
+  80:"Rain showers", 81:"Rain showers", 82:"Violent showers", 95:"Thunderstorm"
+};
+
+const map = L.map('map', { zoomControl: false }).setView([-30.5, 152.3], 6);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+  maxZoom: 18
+}).addTo(map);
+
+const routeOrder = places.filter(p => p.isRouteStop).sort((a,b) => a.order - b.order).map(p => [p.lat, p.lng]);
+L.polyline(routeOrder, {
+  color: '#C17817',
+  weight: 3,
+  opacity: 0.75,
+  dashArray: '1,10',
+  lineCap: 'round'
+}).addTo(map);
+
+function pinIcon(place){
+  const cls = place.isCity ? 'place-pin city' : 'place-pin';
+  return L.divIcon({
+    className: '',
+    html: `<div class="${cls}"><span>${place.isCity ? '★' : '●'}</span></div>`,
+    iconSize: place.isCity ? [38,38] : [32,32],
+    iconAnchor: place.isCity ? [19,36] : [16,30]
+  });
+}
+
+places.forEach(place => {
+  const marker = L.marker([place.lat, place.lng], { icon: pinIcon(place) }).addTo(map);
+  marker.on('click', () => openPanel(place));
+});
+
+const panel = document.getElementById('panel');
+
+function formatDate(iso){
+  const d = new Date(iso + "T12:00:00");
+  return d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+}
+
+async function loadWeather(place){
+  const key = `${place.lat},${place.lng},${place.date}`;
+  const metaEl = document.getElementById('panel-weather-meta');
+  const tempEl = document.getElementById('panel-temp');
+
+  if(weatherCache[key]){
+    renderWeather(weatherCache[key]);
+    return;
+  }
+
+  metaEl.textContent = "Loading actual weather…";
+  tempEl.textContent = "--°";
+
+  try{
+    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${place.lat}&longitude=${place.lng}&start_date=${place.date}&end_date=${place.date}&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=Australia%2FBrisbane`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const max = Math.round(data.daily.temperature_2m_max[0]);
+    const min = Math.round(data.daily.temperature_2m_min[0]);
+    const code = data.daily.weather_code[0];
+    const result = { max, min, desc: weatherCodeMap[code] || "Mixed conditions" };
+    weatherCache[key] = result;
+    if(document.getElementById('panel-title').dataset.activeId === place.id){
+      renderWeather(result);
+    }
+  }catch(err){
+    metaEl.textContent = "Weather unavailable right now.";
+  }
+}
+
+function renderWeather(result){
+  document.getElementById('panel-temp').textContent = `${result.max}°`;
+  document.getElementById('panel-weather-meta').textContent = `${result.desc} · low ${result.min}°`;
+}
+
+function openPanel(place){
+  document.getElementById('panel-title').dataset.activeId = place.id;
+  document.getElementById('panel-region').textContent = place.region;
+  document.getElementById('panel-title').textContent = place.name;
+  document.getElementById('panel-dates').textContent = formatDate(place.date);
+  document.getElementById('panel-writeup').textContent = place.writeup;
+
+  loadWeather(place);
+
+  const gallery = document.getElementById('panel-gallery');
+  gallery.innerHTML = '';
+  for(let i=0;i<place.photoCount;i++){
+    const tile = document.createElement('div');
+    tile.className = 'thumb';
+    tile.textContent = (i+1);
+    gallery.appendChild(tile);
+  }
+
+  panel.classList.add('open');
+  map.flyTo([place.lat, place.lng], place.isCity ? 11 : 12, { duration: 0.6 });
+}
+
+function closePanel(){
+  panel.classList.remove('open');
+}
+</script>
+</body>
+</html>
