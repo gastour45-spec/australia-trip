@@ -98,9 +98,35 @@
     font-size:11px;color:rgba(255,255,255,0.85);
     background:var(--teal);
     cursor:pointer;
+    overflow:hidden;
+    position:relative;
   }
   .thumb:nth-child(3n+2){background:var(--ochre);}
   .thumb:nth-child(3n+3){background:var(--rust);}
+  .thumb img{
+    width:100%;height:100%;object-fit:cover;display:block;
+  }
+
+  .lightbox{
+    position:fixed;inset:0;z-index:2000;
+    background:rgba(20,18,16,0.92);
+    display:none;
+    align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .lightbox.open{display:flex;}
+  .lightbox img{
+    max-width:100%;max-height:100%;border-radius:6px;
+    box-shadow:0 12px 40px rgba(0,0,0,0.5);
+  }
+  .lightbox-close{
+    position:absolute;top:22px;right:22px;
+    width:38px;height:38px;border-radius:50%;
+    border:1px solid rgba(255,255,255,0.4);background:transparent;
+    color:#fff;font-size:18px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .lightbox-close:hover{background:rgba(255,255,255,0.12);}
 
   .placeholder-note{
     font-size:12.5px;color:var(--ink);opacity:0.55;font-style:italic;margin-top:8px;
@@ -165,6 +191,11 @@
       <p class="placeholder-note">Placeholder tiles — your real thumbnails will go here.</p>
     </div>
   </div>
+
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox(event)">✕</button>
+    <img id="lightbox-img" src="" alt="">
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
@@ -182,6 +213,8 @@ const places = [
   { id:"fivedock", name:"Five Dock Italian Festival", region:"Sydney", lat:-33.8667, lng:151.1204, isCity:false, isRouteStop:false, order:1.4, date:"2026-08-16",
     writeup:"The Italian Festival at Five Dock.", photoCount:4 },
 
+  { id:"gosford", name:"Gosford — Tommy's Café", region:"NSW Central Coast", lat:-33.4267, lng:151.3428, isCity:false, isRouteStop:true, order:1.9, date:"2026-08-17",
+    writeup:"A brunch stop on the drive up from Sydney to Port Stephens, at Tommy's Café in Gosford — about two hours here, with parrots squawking noisily in the trees nearby. Less fondly remembered: a parking ticket, courtesy of not reverse parking the car.", photoCount:4 },
   { id:"portstephens", name:"One Mile Beach (base)", region:"Port Stephens", lat:-32.7539, lng:152.1234, isCity:true, isRouteStop:true, order:2, date:"2026-08-17",
     writeup:"Picked up our Kia Carnival from Simba at the airport and drove up to Port Stephens, stopping for brunch at Tommy's Café in Gosford. Settled in at Ingenia Holidays, One Mile Beach, then dinner at Hogs Breath in Nelson Bay.", photoCount:5 },
   { id:"annabay", name:"Anna Bay Sand Safari", region:"Port Stephens", lat:-32.7833, lng:152.0833, isCity:false, isRouteStop:false, order:2.1, date:"2026-08-18",
@@ -317,7 +350,15 @@ function openPanel(place){
   for(let i=0;i<place.photoCount;i++){
     const tile = document.createElement('div');
     tile.className = 'thumb';
-    tile.textContent = (i+1);
+    const num = i+1;
+    const src = `images/${place.id}/${num}.jpg`;
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = `${place.name} photo ${num}`;
+    img.loading = 'lazy';
+    img.onerror = () => { tile.innerHTML = ''; tile.textContent = num; };
+    img.onclick = () => openLightbox(src);
+    tile.appendChild(img);
     gallery.appendChild(tile);
   }
 
@@ -327,6 +368,16 @@ function openPanel(place){
 
 function closePanel(){
   panel.classList.remove('open');
+}
+
+function openLightbox(src){
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+
+function closeLightbox(e){
+  if(e) e.stopPropagation();
+  document.getElementById('lightbox').classList.remove('open');
 }
 </script>
 </body>
