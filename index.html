@@ -188,7 +188,6 @@
     <div class="panel-section">
       <h3>Photos &amp; video</h3>
       <div class="gallery-grid" id="panel-gallery"></div>
-      <p class="placeholder-note">Placeholder tiles — your real thumbnails will go here.</p>
     </div>
   </div>
 
@@ -344,30 +343,64 @@ function openPanel(place){
   document.getElementById('panel-writeup').textContent = place.writeup;
 
   loadWeather(place);
-
-  const gallery = document.getElementById('panel-gallery');
-  gallery.innerHTML = '';
-  for(let i=0;i<place.photoCount;i++){
-    const tile = document.createElement('div');
-    tile.className = 'thumb';
-    const num = i+1;
-    const src = `images/${place.id}/${num}.jpg`;
-    const img = document.createElement('img');
-    img.src = src;
-    img.alt = `${place.name} photo ${num}`;
-    img.loading = 'lazy';
-    img.onerror = () => { tile.innerHTML = ''; tile.textContent = num; };
-    img.onclick = () => openLightbox(src);
-    tile.appendChild(img);
-    gallery.appendChild(tile);
-  }
+  loadGallery(place);
 
   panel.classList.add('open');
   map.flyTo([place.lat, place.lng], place.isCity ? 11 : 12, { duration: 0.6 });
 }
 
+const galleryCache = {};
+const IMAGE_EXTENSIONS = ['jpg','jpeg','png','gif','webp'];
+
+async function loadGallery(place){
+  const gallery = document.getElementById('panel-gallery');
+  gallery.innerHTML = '<p class="placeholder-note">Loading photos…</p>';
+
+  if(galleryCache[place.id]){
+    renderGallery(place, galleryCache[place.id]);
+    return;
+  }
+
+  try{
+    const url = `https://api.github.com/repos/gastour45-spec/australia-trip/contents/images/${place.id}?ref=main`;
+    const res = await fetch(url);
+    if(!res.ok){ galleryCache[place.id] = []; renderGallery(place, []); return; }
+    const files = await res.json();
+    const images = (Array.isArray(files) ? files : [])
+      .filter(f => f.type === 'file' && IMAGE_EXTENSIONS.includes((f.name.split('.').pop()||'').toLowerCase()))
+      .map(f => f.download_url);
+    galleryCache[place.id] = images;
+    if(document.getElementById('panel-title').dataset.activeId === place.id){
+      renderGallery(place, images);
+    }
+  }catch(err){
+    gallery.innerHTML = '<p class="placeholder-note">Couldn\'t load photos right now.</p>';
+  }
+}
+
+function renderGallery(place, images){
+  const gallery = document.getElementById('panel-gallery');
+  gallery.innerHTML = '';
+  if(images.length === 0){
+    gallery.innerHTML = '<p class="placeholder-note">No photos added yet.</p>';
+    return;
+  }
+  images.forEach((src, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'thumb';
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = `${place.name} photo ${i+1}`;
+    img.loading = 'lazy';
+    img.onclick = () => openLightbox(src);
+    tile.appendChild(img);
+    gallery.appendChild(tile);
+  });
+}
+
 function closePanel(){
   panel.classList.remove('open');
+
 }
 
 function openLightbox(src){
