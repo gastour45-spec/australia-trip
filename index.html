@@ -138,6 +138,25 @@
     display:flex;align-items:center;justify-content:center;
   }
   .lightbox-close:hover{background:rgba(255,255,255,0.12);}
+  .lightbox-nav{
+    position:absolute;top:50%;transform:translateY(-50%);
+    width:48px;height:48px;border-radius:50%;
+    border:1px solid rgba(255,255,255,0.4);background:rgba(0,0,0,0.25);
+    color:#fff;font-size:28px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .lightbox-nav:hover{background:rgba(255,255,255,0.15);}
+  .lightbox-prev{left:18px;}
+  .lightbox-next{right:18px;}
+  .lightbox-counter{
+    position:absolute;bottom:22px;left:50%;transform:translateX(-50%);
+    color:rgba(255,255,255,0.8);font-size:13px;
+  }
+  @media (max-width:640px){
+    .lightbox-nav{width:40px;height:40px;font-size:22px;}
+    .lightbox-prev{left:8px;}
+    .lightbox-next{right:8px;}
+  }
 
   .placeholder-note{
     font-size:12.5px;color:var(--ink);opacity:0.55;font-style:italic;margin-top:8px;
@@ -228,7 +247,10 @@
 
   <div class="lightbox" id="lightbox" onclick="closeLightbox()">
     <button class="lightbox-close" onclick="closeLightbox(event)">✕</button>
+    <button class="lightbox-nav lightbox-prev" onclick="lightboxStep(event,-1)">‹</button>
     <img id="lightbox-img" src="" alt="">
+    <button class="lightbox-nav lightbox-next" onclick="lightboxStep(event,1)">›</button>
+    <div class="lightbox-counter" id="lightbox-counter"></div>
   </div>
 </div>
 
@@ -467,7 +489,7 @@ function renderGalleryInto(images, targetElId, altPrefix){
     img.src = src;
     img.alt = `${altPrefix} photo ${i+1}`;
     img.loading = 'lazy';
-    img.onclick = () => openLightbox(src);
+    img.onclick = () => openLightbox(images, i);
     tile.appendChild(img);
     gallery.appendChild(tile);
   });
@@ -490,15 +512,41 @@ function closePanel(){
 
 }
 
-function openLightbox(src){
-  document.getElementById('lightbox-img').src = src;
+let lightboxImages = [];
+let lightboxIndex = 0;
+
+function openLightbox(images, index){
+  lightboxImages = images;
+  lightboxIndex = index;
+  showLightboxImage();
   document.getElementById('lightbox').classList.add('open');
+}
+
+function showLightboxImage(){
+  document.getElementById('lightbox-img').src = lightboxImages[lightboxIndex];
+  const counter = document.getElementById('lightbox-counter');
+  const multi = lightboxImages.length > 1;
+  counter.textContent = multi ? `${lightboxIndex+1} / ${lightboxImages.length}` : '';
+  document.querySelectorAll('.lightbox-nav').forEach(btn => btn.style.display = multi ? 'flex' : 'none');
+}
+
+function lightboxStep(e, dir){
+  if(e) e.stopPropagation();
+  lightboxIndex = (lightboxIndex + dir + lightboxImages.length) % lightboxImages.length;
+  showLightboxImage();
 }
 
 function closeLightbox(e){
   if(e) e.stopPropagation();
   document.getElementById('lightbox').classList.remove('open');
 }
+
+document.addEventListener('keydown', (e) => {
+  if(!document.getElementById('lightbox').classList.contains('open')) return;
+  if(e.key === 'ArrowRight') lightboxStep(null, 1);
+  if(e.key === 'ArrowLeft') lightboxStep(null, -1);
+  if(e.key === 'Escape') closeLightbox();
+});
 </script>
 </body>
 </html>
