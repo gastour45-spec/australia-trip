@@ -38,6 +38,17 @@
   }
   header h1{font-size:22px;color:var(--teal-deep);}
   header span{font-size:13px;color:var(--ink);opacity:0.65;}
+  #journey-btn{
+    pointer-events:auto;
+    margin-left:auto;
+    background:var(--paper);border:1px solid var(--line);border-radius:20px;
+    padding:8px 16px;font-size:13px;font-family:'Inter',sans-serif;color:var(--teal-deep);
+    cursor:pointer;
+  }
+  #journey-btn:hover{background:var(--sand-deep);}
+
+  .journey-section{padding:22px 28px;border-bottom:1px solid var(--line);}
+  .journey-section h3{font-size:16px;font-family:'Fraunces',serif;color:var(--rust);margin-bottom:8px;}
 
   .place-pin{
     width:32px;height:32px;border-radius:50% 50% 50% 0;
@@ -157,6 +168,7 @@
   <header>
     <h1>Sydney → Brisbane</h1>
     <span>Our 3 week Australia trip, Aug 2026</span>
+    <button id="journey-btn" onclick="openJourney()">✈ The Journey</button>
   </header>
 
   <div class="legend">
@@ -191,6 +203,29 @@
     </div>
   </div>
 
+  <div class="panel" id="journey-panel">
+    <div class="panel-hero">
+      <button class="panel-close" onclick="closeJourney()">✕</button>
+      <div class="eyebrow">The Journey</div>
+      <h2>Getting there &amp; back</h2>
+    </div>
+    <div class="journey-section">
+      <h3>Heathrow — setting off</h3>
+      <p>Left Heathrow Monday morning, via Delhi with Air India, landing in Sydney Tuesday evening.</p>
+      <div class="gallery-grid" id="journey-gallery-heathrow"></div>
+    </div>
+    <div class="journey-section">
+      <h3>Taipei — the stopover home</h3>
+      <p>Flew home via Taipei on China Airlines, landing back Monday 31 August at 17:30.</p>
+      <div class="gallery-grid" id="journey-gallery-taipei"></div>
+    </div>
+    <div class="journey-section">
+      <h3>On the road</h3>
+      <p>Snapshots from the car somewhere along the way.</p>
+      <div class="gallery-grid" id="journey-gallery-roadtrip"></div>
+    </div>
+  </div>
+
   <div class="lightbox" id="lightbox" onclick="closeLightbox()">
     <button class="lightbox-close" onclick="closeLightbox(event)">✕</button>
     <img id="lightbox-img" src="" alt="">
@@ -205,6 +240,8 @@ const places = [
     writeup:"Landed in Sydney Tuesday evening after the long haul via Delhi with Air India, and settled into our Airbnb on Chelsea Street, Redfern.", photoCount:4 },
   { id:"sydney-harbour", name:"Harbour Bridge & Opera House", region:"Sydney", lat:-33.8568, lng:151.2153, isCity:false, isRouteStop:false, order:1.1, date:"2026-08-13",
     writeup:"A day in the city — the Harbour Bridge, the Opera House, and a walk through the Royal Botanic Gardens.", photoCount:6 },
+  { id:"darlingharbour", name:"Darling Harbour", region:"Sydney", lat:-33.8730, lng:151.2010, isCity:false, isRouteStop:false, order:1.15, date:"2026-08-13",
+    writeup:"An evening walking around Darling Harbour, taking in the sights.", photoCount:0 },
   { id:"sydney-bondi", name:"Bondi to Coogee", region:"Sydney", lat:-33.8908, lng:151.2743, isCity:false, isRouteStop:false, order:1.2, date:"2026-08-14",
     writeup:"Beach day — Bondi Beach, then the coastal walk down to Coogee.", photoCount:7 },
   { id:"sydney-coogee", name:"City shopping & Coogee Pavilion", region:"Sydney", lat:-33.9198, lng:151.2589, isCity:false, isRouteStop:false, order:1.3, date:"2026-08-15",
@@ -219,16 +256,22 @@ const places = [
   { id:"annabay", name:"Anna Bay Sand Safari", region:"Port Stephens", lat:-32.7833, lng:152.0833, isCity:false, isRouteStop:false, order:2.1, date:"2026-08-18",
     writeup:"4WD sand dune safari at Anna Bay.", photoCount:6 },
 
+  { id:"forster", name:"Forster — Beach Bums Café", region:"Mid North Coast", lat:-32.1833, lng:152.5167, isCity:false, isRouteStop:true, order:2.9, date:"2026-08-19",
+    writeup:"A brunch stop at Beach Bums Café in Forster, on the drive from Port Stephens to Port Macquarie.", photoCount:0 },
   { id:"portmacquarie", name:"Port Macquarie", region:"Mid North Coast", lat:-31.4308, lng:152.9091, isCity:true, isRouteStop:true, order:3, date:"2026-08-19",
     writeup:"Drove up via Beach Bums Café in Forster. Stayed at Oxley Cove Apartments, walked the Sea Acres Rainforest boardwalk, and finished with Hogs Breath and a Blue Cow Gelato in the evening.", photoCount:6 },
 
   { id:"coffsharbour", name:"Coffs Harbour", region:"Mid North Coast", lat:-30.2963, lng:153.1157, isCity:true, isRouteStop:true, order:4, date:"2026-08-20",
     writeup:"On to Coffs Harbour, grabbing pastries from Bakers Delight before leaving Port Macquarie. Stayed at Reflections Holidays on the Pacific Highway, evening at the Hoey Moey.", photoCount:4 },
 
+  { id:"maclean", name:"Maclean — Botero Roastery", region:"Northern NSW", lat:-29.4667, lng:153.2000, isCity:false, isRouteStop:true, order:4.9, date:"2026-08-21",
+    writeup:"A brunch stop at Botero Roastery in Maclean, on the drive from Coffs Harbour to Byron Bay.", photoCount:0 },
   { id:"byronbay", name:"Byron Bay (base)", region:"Byron Bay", lat:-28.6474, lng:153.6020, isCity:true, isRouteStop:true, order:5, date:"2026-08-21",
     writeup:"Drove to Byron via Botero Roastery in Maclean for brunch, and checked into The Terraces on Lawson Street.", photoCount:6 },
-  { id:"brunswick", name:"Brunswick Heads — Whale Watching", region:"Byron Bay", lat:-28.5386, lng:153.5486, isCity:false, isRouteStop:false, order:5.1, date:"2026-08-23",
-    writeup:"Whale watching out of Brunswick Heads with Blue Whale Diving Company.", photoCount:8 },
+  { id:"brunswick", name:"Brunswick Heads", region:"Byron Bay", lat:-28.5386, lng:153.5486, isCity:false, isRouteStop:false, order:5.1, date:"2026-08-23",
+    writeup:"A visit to Brunswick Heads — also back here Monday for lunch on the way out of Byron.", photoCount:0 },
+  { id:"whalewatching", name:"Whale Watching", region:"Brunswick Heads", lat:-28.5410, lng:153.5510, isCity:false, isRouteStop:false, order:5.15, date:"2026-08-23",
+    writeup:"Whale watching out of Brunswick Heads with Blue Whale Diving Company.", photoCount:0 },
 
   { id:"hollywell", name:"Hollywell — Rikki's Café (H2O)", region:"Gold Coast", lat:-27.9206, lng:153.4103, isCity:false, isRouteStop:true, order:6, date:"2026-08-24",
     writeup:"On the way to Brisbane we stopped at Rikki's Café in Hollywell — the filming location from H2O — before continuing down through Broadwater.", photoCount:4 },
@@ -245,10 +288,12 @@ const places = [
     writeup:"A full day at Australia Zoo.", photoCount:7 },
   { id:"noosa", name:"Noosa", region:"Sunshine Coast", lat:-26.3949, lng:153.0918, isCity:false, isRouteStop:false, order:7.4, date:"2026-08-27",
     writeup:"Day trip up to Noosa.", photoCount:6 },
-  { id:"southbank", name:"South Bank", region:"Brisbane", lat:-27.4759, lng:153.0197, isCity:false, isRouteStop:false, order:7.5, date:"2026-08-28",
-    writeup:"An afternoon at South Bank.", photoCount:5 },
-  { id:"milton", name:"South Bank & Milton", region:"Brisbane", lat:-27.4681, lng:153.0033, isCity:false, isRouteStop:false, order:7.6, date:"2026-08-29",
-    writeup:"Back to South Bank, plus a look around Milton.", photoCount:4 },
+  { id:"southbank", name:"South Bank (Friday)", region:"Brisbane", lat:-27.4759, lng:153.0197, isCity:false, isRouteStop:false, order:7.5, date:"2026-08-28",
+    writeup:"An afternoon at South Bank.", photoCount:0 },
+  { id:"southbanksat", name:"South Bank (Saturday)", region:"Brisbane", lat:-27.4759, lng:153.0197, isCity:false, isRouteStop:false, order:7.55, date:"2026-08-29",
+    writeup:"Back to South Bank again.", photoCount:0 },
+  { id:"milton", name:"Milton", region:"Brisbane", lat:-27.4681, lng:153.0033, isCity:false, isRouteStop:false, order:7.6, date:"2026-08-29",
+    writeup:"A look around Milton.", photoCount:0 },
   { id:"dfo", name:"DFO Skygate", region:"Brisbane Airport", lat:-27.3798, lng:153.1173, isCity:false, isRouteStop:false, order:7.7, date:"2026-08-30",
     writeup:"Last day — the DFO outlet village at Skygate, then off to the airport for the flight home via Taipei on China Airlines.", photoCount:3 }
 ];
@@ -270,13 +315,37 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 const routeOrder = places.filter(p => p.isRouteStop).sort((a,b) => a.order - b.order).map(p => [p.lat, p.lng]);
-L.polyline(routeOrder, {
+const routeLine = L.polyline(routeOrder, {
   color: '#C17817',
   weight: 3,
   opacity: 0.75,
   dashArray: '1,10',
   lineCap: 'round'
 }).addTo(map);
+
+/* Try to replace the straight dashed line with the actual driving route along the highway. Falls back to the straight line above if this fails. */
+(async () => {
+  try{
+    const coordStr = routeOrder.map(([lat,lng]) => `${lng},${lat}`).join(';');
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const coords = data.routes && data.routes[0] && data.routes[0].geometry.coordinates;
+    if(coords && coords.length){
+      const latlngs = coords.map(([lng,lat]) => [lat,lng]);
+      map.removeLayer(routeLine);
+      L.polyline(latlngs, {
+        color: '#C17817',
+        weight: 3.5,
+        opacity: 0.85,
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(map);
+    }
+  }catch(err){
+    /* keep the straight dashed line as a fallback */
+  }
+})();
 
 function pinIcon(place){
   const cls = place.isCity ? 'place-pin city' : 'place-pin';
@@ -336,6 +405,7 @@ function renderWeather(result){
 }
 
 function openPanel(place){
+  document.getElementById('journey-panel').classList.remove('open');
   document.getElementById('panel-title').dataset.activeId = place.id;
   document.getElementById('panel-region').textContent = place.region;
   document.getElementById('panel-title').textContent = place.name;
@@ -353,33 +423,38 @@ const galleryCache = {};
 const IMAGE_EXTENSIONS = ['jpg','jpeg','png','gif','webp'];
 
 async function loadGallery(place){
-  const gallery = document.getElementById('panel-gallery');
+  loadGalleryInto(place.id, 'panel-gallery', place.name, place.id);
+}
+
+async function loadGalleryInto(folderId, targetElId, altPrefix, activeCheckId){
+  const gallery = document.getElementById(targetElId);
   gallery.innerHTML = '<p class="placeholder-note">Loading photos…</p>';
 
-  if(galleryCache[place.id]){
-    renderGallery(place, galleryCache[place.id]);
+  if(galleryCache[folderId]){
+    renderGalleryInto(galleryCache[folderId], targetElId, altPrefix);
     return;
   }
 
   try{
-    const url = `https://api.github.com/repos/gastour45-spec/australia-trip/contents/images/${place.id}?ref=main`;
+    const url = `https://api.github.com/repos/gastour45-spec/australia-trip/contents/images/${folderId}?ref=main`;
     const res = await fetch(url);
-    if(!res.ok){ galleryCache[place.id] = []; renderGallery(place, []); return; }
+    if(!res.ok){ galleryCache[folderId] = []; renderGalleryInto([], targetElId, altPrefix); return; }
     const files = await res.json();
     const images = (Array.isArray(files) ? files : [])
       .filter(f => f.type === 'file' && IMAGE_EXTENSIONS.includes((f.name.split('.').pop()||'').toLowerCase()))
       .map(f => f.download_url);
-    galleryCache[place.id] = images;
-    if(document.getElementById('panel-title').dataset.activeId === place.id){
-      renderGallery(place, images);
+    galleryCache[folderId] = images;
+    const stillActive = !activeCheckId || document.getElementById('panel-title').dataset.activeId === activeCheckId || document.getElementById('journey-panel').classList.contains('open');
+    if(stillActive){
+      renderGalleryInto(images, targetElId, altPrefix);
     }
   }catch(err){
     gallery.innerHTML = '<p class="placeholder-note">Couldn\'t load photos right now.</p>';
   }
 }
 
-function renderGallery(place, images){
-  const gallery = document.getElementById('panel-gallery');
+function renderGalleryInto(images, targetElId, altPrefix){
+  const gallery = document.getElementById(targetElId);
   gallery.innerHTML = '';
   if(images.length === 0){
     gallery.innerHTML = '<p class="placeholder-note">No photos added yet.</p>';
@@ -390,12 +465,24 @@ function renderGallery(place, images){
     tile.className = 'thumb';
     const img = document.createElement('img');
     img.src = src;
-    img.alt = `${place.name} photo ${i+1}`;
+    img.alt = `${altPrefix} photo ${i+1}`;
     img.loading = 'lazy';
     img.onclick = () => openLightbox(src);
     tile.appendChild(img);
     gallery.appendChild(tile);
   });
+}
+
+function openJourney(){
+  panel.classList.remove('open');
+  document.getElementById('journey-panel').classList.add('open');
+  loadGalleryInto('heathrow', 'journey-gallery-heathrow', 'Heathrow');
+  loadGalleryInto('taipei', 'journey-gallery-taipei', 'Taipei');
+  loadGalleryInto('roadtrip', 'journey-gallery-roadtrip', 'On the road');
+}
+
+function closeJourney(){
+  document.getElementById('journey-panel').classList.remove('open');
 }
 
 function closePanel(){
